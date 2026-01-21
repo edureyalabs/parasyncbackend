@@ -1,10 +1,9 @@
 import modal
-from modal import Image, Stub, asgi_app
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-image = Image.debian_slim().pip_install(
-    "crewai==0.95.2",
+image = modal.Image.debian_slim().pip_install(
+    "crewai",
     "supabase==2.9.1",
     "python-dotenv==1.0.0",
     "litellm==1.52.12",
@@ -12,9 +11,9 @@ image = Image.debian_slim().pip_install(
     "pydantic==2.10.3"
 )
 
-stub = Stub("ai-agent-backend", image=image)
+app = modal.App("ai-agent-backend", image=image)
 
-app = FastAPI()
+web_app = FastAPI()
 
 class ChatProcessRequest(BaseModel):
     message_id: str
@@ -22,19 +21,19 @@ class ChatProcessRequest(BaseModel):
     agent_id: str
     message: str
 
-@stub.function(
+@app.function(
     secrets=[
         modal.Secret.from_name("supabase-secrets"),
         modal.Secret.from_name("groq-secret")
     ],
     timeout=600
 )
-@asgi_app()
+@modal.asgi_app()
 def fastapi_app():
     from database import get_agent_data, get_agent_config, get_chat_history
     from agent_processor import process_chat_message
     
-    @app.post("/chat/process")
+    @web_app.post("/chat/process")
     async def process_chat(request: ChatProcessRequest):
         print(f"Processing message: {request.message_id}")
         
@@ -55,4 +54,4 @@ def fastapi_app():
             print(f"Error in process_chat: {str(e)}")
             raise HTTPException(status_code=500, detail=str(e))
     
-    return app
+    return web_app

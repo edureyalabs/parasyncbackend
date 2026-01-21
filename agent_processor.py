@@ -54,7 +54,7 @@ Respond naturally and helpfully to the user's message."""
         return {
             'response': response,
             'execution_time_ms': execution_time,
-            'model': config_data.get('llm', 'groq/llama-3.2-90b-text-preview')
+            'model': config_data.get('llm', 'groq/llama-3.1-8b-instant')
         }
     except Exception as e:
         print(f"Error in process_chat_message: {str(e)}")
