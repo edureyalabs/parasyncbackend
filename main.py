@@ -1,14 +1,13 @@
 import modal
-from modal import Image, Stub, web_endpoint, asgi_app
+from modal import Image, Stub, asgi_app
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-import os
 
 image = Image.debian_slim().pip_install(
     "crewai==0.95.2",
     "supabase==2.9.1",
     "python-dotenv==1.0.0",
-    "openai==1.58.1",
+    "litellm==1.52.12",
     "fastapi==0.115.5",
     "pydantic==2.10.3"
 )
@@ -36,7 +35,7 @@ class TaskListRequest(BaseModel):
 @stub.function(
     secrets=[
         modal.Secret.from_name("supabase-secrets"),
-        modal.Secret.from_name("openai-secret")
+        modal.Secret.from_name("groq-secret")
     ],
     timeout=600
 )
@@ -122,7 +121,7 @@ def fastapi_app():
 @stub.function(
     secrets=[
         modal.Secret.from_name("supabase-secrets"),
-        modal.Secret.from_name("openai-secret")
+        modal.Secret.from_name("groq-secret")
     ],
     timeout=3600
 )
@@ -165,10 +164,3 @@ async def execute_task_async(task_id: str, user_id: str, agent_id: str, descript
         print(f"Critical error in execute_task_async: {str(e)}")
         update_task_status(task_id, 'failed', error_message=str(e))
         insert_message(user_id, agent_id, f"Task failed: {str(e)}", 'agent', task_id)
-```
-
-## .env.example
-```
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_KEY=your_service_key
-OPENAI_API_KEY=your_openai_key

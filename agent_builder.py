@@ -1,14 +1,28 @@
-from crewai import Agent
+from crewai import Agent, LLM
 
 def build_agent(agent_data, config_data):
     print(f"Building agent: {agent_data['display_name']}")
+    
+    llm_model = config_data.get('llm', 'groq/llama-3.2-90b-text-preview')
+    
+    llm = LLM(
+        model=llm_model,
+        temperature=0.7
+    )
+    
+    function_calling_llm = None
+    if config_data.get('function_calling_llm'):
+        function_calling_llm = LLM(
+            model=config_data['function_calling_llm'],
+            temperature=0.7
+        )
     
     agent = Agent(
         role=agent_data.get('role', 'AI Assistant'),
         goal=agent_data.get('goal', 'Assist the user'),
         backstory=agent_data.get('backstory', 'An experienced AI assistant'),
-        llm=config_data.get('llm', 'gpt-4'),
-        function_calling_llm=config_data.get('function_calling_llm'),
+        llm=llm,
+        function_calling_llm=function_calling_llm,
         verbose=config_data.get('verbose', False),
         allow_delegation=config_data.get('allow_delegation', False),
         max_iter=config_data.get('max_iter', 20),
