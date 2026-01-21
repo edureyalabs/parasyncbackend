@@ -2,13 +2,17 @@ import modal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-image = modal.Image.debian_slim().pip_install(
-    "crewai",
-    "supabase==2.9.1",
-    "python-dotenv==1.0.0",
-    "litellm==1.52.12",
-    "fastapi==0.115.5",
-    "pydantic==2.10.3"
+image = (
+    modal.Image.debian_slim()
+    .pip_install(
+        "crewai",
+        "supabase==2.9.1",
+        "python-dotenv==1.0.0",
+        "litellm==1.52.12",
+        "fastapi==0.115.5",
+        "pydantic==2.10.3"
+    )
+    .add_local_dir(".", "/root")  # Add this line to include all local files
 )
 
 app = modal.App("ai-agent-backend", image=image)
