@@ -1,6 +1,14 @@
 from crewai import Agent, LLM
 
-def build_agent(agent_data, config_data):
+def build_agent(agent_data, config_data, tools=None):
+    """
+    Build a CrewAI agent with the provided configuration and tools.
+    
+    Args:
+        agent_data: Agent configuration from database
+        config_data: Global agent config settings
+        tools: List of BaseTool instances to provide to the agent
+    """
     print(f"Building agent: {agent_data['display_name']}")
     
     llm_model = config_data.get('llm', 'groq/llama-3.1-8b-instant')
@@ -16,6 +24,10 @@ def build_agent(agent_data, config_data):
             model=config_data['function_calling_llm'],
             temperature=0.7
         )
+    
+    # Use provided tools or empty list
+    agent_tools = tools if tools is not None else []
+    print(f"Agent will be initialized with {len(agent_tools)} tools")
     
     agent = Agent(
         role=agent_data.get('role', 'AI Assistant'),
@@ -38,7 +50,7 @@ def build_agent(agent_data, config_data):
         date_format=config_data.get('date_format', '%Y-%m-%d'),
         reasoning=config_data.get('reasoning', False),
         max_reasoning_attempts=config_data.get('max_reasoning_attempts'),
-        tools=[],
+        tools=agent_tools,  # Pass the tools here
         knowledge_sources=config_data.get('knowledge_sources'),
         embedder=config_data.get('embedder'),
         system_template=config_data.get('system_template'),

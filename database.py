@@ -28,3 +28,19 @@ def get_chat_history(user_id: str, agent_id: str, limit: int = 10):
         .execute())
     print(f"Fetched {len(response.data)} messages")
     return response.data
+
+def get_agent_tools(agent_id: str):
+    """
+    Fetch all tools mapped to a specific agent.
+    Joins agent_tools with api_tools to get full tool configuration.
+    """
+    print(f"Fetching tools for agent: {agent_id}")
+    response = (supabase.table('agent_tools')
+        .select('tool_id, api_tools(*)')
+        .eq('agent_id', agent_id)
+        .execute())
+    
+    # Extract the api_tools data from the response
+    tools_data = [item['api_tools'] for item in response.data if item.get('api_tools')]
+    print(f"Fetched {len(tools_data)} tools for agent")
+    return tools_data

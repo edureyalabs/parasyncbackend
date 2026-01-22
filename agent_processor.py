@@ -1,5 +1,6 @@
 from agent_builder import build_agent
-from database import get_agent_data, get_agent_config, get_chat_history
+from database import get_agent_data, get_agent_config, get_chat_history, get_agent_tools
+from tool_builder import build_tools_for_agent
 from crewai import Task, Crew
 import time
 
@@ -8,9 +9,18 @@ def process_chat_message(user_id: str, agent_id: str, message: str):
     start_time = time.time()
     
     try:
+        # Fetch agent data and config
         agent_data = get_agent_data(agent_id)
         config_data = get_agent_config()
-        agent = build_agent(agent_data, config_data)
+        
+        # Fetch and build tools for this agent
+        print("Fetching tools for agent...")
+        tools_data = get_agent_tools(agent_id)
+        agent_tools = build_tools_for_agent(tools_data)
+        print(f"Built {len(agent_tools)} tools for agent")
+        
+        # Build agent with tools
+        agent = build_agent(agent_data, config_data, tools=agent_tools)
         
         # Get chat history for context
         chat_history = get_chat_history(user_id, agent_id, limit=10)
@@ -54,7 +64,8 @@ Respond naturally and helpfully to the user's message."""
         return {
             'response': response,
             'execution_time_ms': execution_time,
-            'model': config_data.get('llm', 'groq/llama-3.1-8b-instant')
+            'model': config_data.get('llm', 'groq/llama-3.1-8b-instant'),
+            'tools_used': len(agent_tools)
         }
     except Exception as e:
         print(f"Error in process_chat_message: {str(e)}")

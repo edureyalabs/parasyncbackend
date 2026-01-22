@@ -10,7 +10,8 @@ image = (
         "python-dotenv==1.0.0",
         "litellm==1.52.12",
         "fastapi==0.115.5",
-        "pydantic==2.10.3"
+        "pydantic==2.10.3",
+        "requests==2.32.3"  # Added for API tool calls
     )
     .add_local_dir(".", "/root")  # Add this line to include all local files
 )
@@ -34,7 +35,7 @@ class ChatProcessRequest(BaseModel):
 )
 @modal.asgi_app()
 def fastapi_app():
-    from database import get_agent_data, get_agent_config, get_chat_history
+    from database import get_agent_data, get_agent_config, get_chat_history, get_agent_tools
     from agent_processor import process_chat_message
     
     @web_app.post("/chat/process")
@@ -52,7 +53,8 @@ def fastapi_app():
                 'success': True,
                 'response': result['response'],
                 'execution_time_ms': result['execution_time_ms'],
-                'model': result.get('model', 'groq/llama-3.2-90b-text-preview')
+                'model': result.get('model', 'groq/llama-3.2-90b-text-preview'),
+                'tools_available': result.get('tools_used', 0)
             }
         except Exception as e:
             print(f"Error in process_chat: {str(e)}")
