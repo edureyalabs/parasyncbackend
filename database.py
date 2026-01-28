@@ -1,46 +1,59 @@
 from supabase import create_client, Client
-from config import SUPABASE_URL, SUPABASE_SERVICE_KEY, AGENT_CONFIG_ID
-from datetime import datetime
+from config import SUPABASE_URL, SUPABASE_SERVICE_KEY
+from typing import List, Dict, Any, Optional
+from models import Task, TaskStatus
+import json
 
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
-
-def get_agent_data(agent_id: str):
-    print(f"Fetching agent data for: {agent_id}")
-    response = supabase.table('agents').select('*').eq('id', agent_id).single().execute()
-    print(f"Agent data fetched: {response.data['username']}")
-    return response.data
-
-def get_agent_config():
-    print(f"Fetching agent config: {AGENT_CONFIG_ID}")
-    response = supabase.table('agent_config').select('*').eq('id', AGENT_CONFIG_ID).single().execute()
-    print("Agent config fetched successfully")
-    return response.data
-
-def get_chat_history(user_id: str, agent_id: str, limit: int = 10):
-    print(f"Fetching chat history for user: {user_id}, agent: {agent_id}")
-    response = (supabase.table('chat_messages')
-        .select('*')
-        .eq('user_id', user_id)
-        .eq('agent_id', agent_id)
-        .eq('status', 'completed')  # Only get completed messages
-        .order('created_at', desc=False)
-        .limit(limit)
-        .execute())
-    print(f"Fetched {len(response.data)} messages")
-    return response.data
-
-def get_agent_tools(agent_id: str):
-    """
-    Fetch all tools mapped to a specific agent.
-    Joins agent_tools with api_tools to get full tool configuration.
-    """
-    print(f"Fetching tools for agent: {agent_id}")
-    response = (supabase.table('agent_tools')
-        .select('tool_id, api_tools(*)')
-        .eq('agent_id', agent_id)
-        .execute())
+class Database:
+    def __init__(self):
+        self.client: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
     
-    # Extract the api_tools data from the response
-    tools_data = [item['api_tools'] for item in response.data if item.get('api_tools')]
-    print(f"Fetched {len(tools_data)} tools for agent")
-    return tools_data
+    async def get_agent_data(self, agent_id: str) -> Dict[str, Any]:
+        response = self.client.table('agents').select('*').eq('id', agent_id).single().execute()
+        return response.data
+    
+    async def get_user_agent_network(self, user_id: str, agent_id: str) -> Optional[Dict[str, Any]]:
+        response = self.client.table('my_network').select('*').eq('user_id', user_id).eq('agent_id', agent_id).maybeSingle().execute()
+        return response.data
+    
+    async def create_task(self, task_data: Dict[str, Any]) -> Task:
+        response = self.client.table('tasks').insert(task_data).execute()
+        return Task(**response.data[0])
+    
+    async def update_task(self, task_id: str, update_data: Dict[str, Any]) -> Task:
+        response = self.client.table('tasks').update(update_data).eq('id', task_id).execute()
+        return Task(**response.data[0])
+    
+    async def get_task(self, task_id: str) -> Optional[Task]:
+        response = self.client.table('tasks').select('*').eq('id', task_id).maybeSingle().execute()
+        if response.data:
+            return Task(**response.data)
+        return None
+    
+    async def get_user_agent_tasks(self, user_id: str, agent_id: str, status: Optional[str] = None) -> List[Task]:
+        query = self.client.table('tasks').select('*').eq('user_id', user_id).eq('agent_id', agent_id)
+        
+        if status:
+            query = query.eq('status', status)
+        
+        response = query.order('created_at', desc=True).execute()
+        return [Task(**task) for task in response.data]
+    
+    async def get_pending_tasks(self, user_id: str, agent_id: str) -> List[Task]:
+        return await self.get_user_agent_tasks(user_id, agent_id, TaskStatus.PENDING.value)
+    
+    async def insert_chat_message(self, user_id: str, agent_id: str, message_text: str, sender_type: str, status: str = "completed"):
+        message_data = {
+            "user_id": user_id,
+            "agent_id": agent_id,
+            "message_text": message_text,
+            "sender_type": sender_type,
+            "status": status
+        }
+        self.client.table('chat_messages').insert(message_data).execute()
+    
+    async def get_recent_messages(self, user_id: str, agent_id: str, limit: int = 20) -> List[Dict[str, Any]]:
+        response = self.client.table('chat_messages').select('*').eq('user_id', user_id).eq('agent_id', agent_id).order('created_at', desc=False).limit(limit).execute()
+        return response.data
+
+db = Database()
