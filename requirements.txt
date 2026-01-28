@@ -4,4 +4,3 @@ supabase==2.9.1
 python-dotenv==1.0.0
 groq==0.11.0
 pydantic==2.10.3
-asyncio
