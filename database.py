@@ -32,10 +32,15 @@ class Database:
         return Task(**response.data[0])
     
     async def get_task(self, task_id: str) -> Optional[Task]:
-        response = self.client.table('tasks').select('*').eq('id', task_id).maybeSingle().execute()
-        if response.data:
-            return Task(**response.data)
-        return None
+        try:
+            response = self.client.table('tasks').select('*').eq('id', task_id).execute()
+            
+            if response.data and len(response.data) > 0:
+                return Task(**response.data[0])
+            return None
+        except Exception as e:
+            print(f"Error fetching task: {e}")
+            return None
     
     async def get_user_agent_tasks(self, user_id: str, agent_id: str, status: Optional[str] = None) -> List[Task]:
         query = self.client.table('tasks').select('*').eq('user_id', user_id).eq('agent_id', agent_id)
