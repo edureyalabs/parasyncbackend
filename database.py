@@ -12,8 +12,16 @@ class Database:
         return response.data
     
     async def get_user_agent_network(self, user_id: str, agent_id: str) -> Optional[Dict[str, Any]]:
-        response = self.client.table('my_network').select('*').eq('user_id', user_id).eq('agent_id', agent_id).maybeSingle().execute()
-        return response.data
+        try:
+            response = self.client.table('user_network_agents').select('*').eq('user_id', user_id).eq('agent_id', agent_id).execute()
+            
+            # Check if any data was returned
+            if response.data and len(response.data) > 0:
+                return response.data[0]
+            return None
+        except Exception as e:
+            print(f"Error fetching user agent network: {e}")
+            return None
     
     async def create_task(self, task_data: Dict[str, Any]) -> Task:
         response = self.client.table('tasks').insert(task_data).execute()
