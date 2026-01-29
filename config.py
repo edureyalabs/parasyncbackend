@@ -1,11 +1,15 @@
 import os
-from dotenv import load_dotenv
-
-load_dotenv()
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+
+if not SUPABASE_URL:
+    raise ValueError("SUPABASE_URL environment variable is required")
+if not SUPABASE_SERVICE_KEY:
+    raise ValueError("SUPABASE_SERVICE_KEY environment variable is required")
+if not GROQ_API_KEY:
+    raise ValueError("GROQ_API_KEY environment variable is required")
 
 LLM_CONFIG = {
     "model": "llama-3.3-70b-versatile",

@@ -1,10 +1,6 @@
 fastapi
-uvicorn[standard]
+uvicorn
 supabase
-postgrest
-realtime
-storage3
-python-dotenv
 groq
 pydantic
 httpx
