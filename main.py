@@ -6,6 +6,15 @@ from database import db
 from config import SERVER_CONFIG, LLM_CONFIG
 from tools import get_available_tools
 import asyncio
+from pydantic import BaseModel
+
+# Add this model near the top with your other models
+class ProcessChatRequest(BaseModel):
+    message_id: str
+    user_id: str
+    agent_id: str
+    message: str
+
 
 app = FastAPI(title="Living AI Agent Backend")
 
@@ -39,16 +48,11 @@ async def health():
     return {"status": "healthy"}
 
 @app.post("/chat/process")
-async def process_chat(
-    message_id: str,
-    user_id: str,
-    agent_id: str,
-    message: str
-):
+async def process_chat(request: ProcessChatRequest):
     try:
-        agent = await agent_manager.get_or_create_agent(user_id, agent_id)
+        agent = await agent_manager.get_or_create_agent(request.user_id, request.agent_id)
         
-        response = await agent.handle_message(message)
+        response = await agent.handle_message(request.message)
         
         return {
             "success": True,
