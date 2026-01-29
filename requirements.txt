@@ -1,7 +1,2 @@
 fastapi
 uvicorn
-supabase
-python-dotenv
-groq
-pydantic
-httpx
