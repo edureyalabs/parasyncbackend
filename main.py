@@ -7,6 +7,8 @@ from config import SERVER_CONFIG, LLM_CONFIG
 from tools import get_available_tools
 import asyncio
 from pydantic import BaseModel
+import traceback
+from fastapi import FastAPI, HTTPException
 
 # Add this model near the top with your other models
 class ProcessChatRequest(BaseModel):
@@ -50,9 +52,13 @@ async def health():
 @app.post("/chat/process")
 async def process_chat(request: ProcessChatRequest):
     try:
+        print(f"Processing chat request: user_id={request.user_id}, agent_id={request.agent_id}")
+        
         agent = await agent_manager.get_or_create_agent(request.user_id, request.agent_id)
+        print(f"Agent created/retrieved successfully")
         
         response = await agent.handle_message(request.message)
+        print(f"Message handled, response: {response[:100]}...")
         
         return {
             "success": True,
@@ -63,6 +69,8 @@ async def process_chat(request: ProcessChatRequest):
         }
     
     except Exception as e:
+        print(f"ERROR in process_chat: {str(e)}")
+        print(f"Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/tasks/{user_id}/{agent_id}")
